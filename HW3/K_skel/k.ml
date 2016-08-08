@@ -214,14 +214,115 @@ struct
       let n = value_int v in
       let _ = print_endline (string_of_int n) in
       (v, mem')
-    | LETV (x, e1, e2) ->
-      let (v, mem') = eval mem env e1 in
-      let (l, mem'') = Mem.alloc mem' in
-      eval (Mem.store mem'' l v) (Env.bind env x (Addr l)) e2
+    
     | ASSIGN (x, e) ->
       let (v, mem') = eval mem env e in
       let l = lookup_env_loc env x in
-      (v, Mem.store mem' l v)
+      (v, Mem.store mem' l v)      
+    | NUM n ->
+      (Num n, mem) 
+    | TRUE ->
+      (Bool true, mem)
+    | FALSE -> 
+      (Bool false, mem)
+    | UNIT -> 
+      (Unit, mem)
+    
+    | VAR x ->
+      let l = lookup_env_loc env x in
+      (Mem.load mem l, mem) 
+    
+    | ADD (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = Num (n1 + n2) in
+      (v, mem'')
+
+    | SUB (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = Num (n1 + n2) in
+      (v, mem'')
+
+    | MUL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = Num (n1 * n2) in
+      (v, mem'')
+    | DIV (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = Num (n1 / n2) in
+      (v, mem'')
+    
+    | EQUAL (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = if n1 = n2 then Bool true else Bool false in 
+      (v, mem'')
+    
+    | LESS (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let n1 = value_int v1 in
+      let (v2, mem'') = eval mem' env e2 in
+      let n2 = value_int v2 in
+      let v = if n1 < n2 then Bool true else Bool false in
+      (v, mem'')
+
+    | NOT e ->
+      let (v, mem') = eval mem env e in
+      let b = value_bool v in
+      let v' = Bool (not b) in
+      (v', mem')
+    
+    | SEQ (e1, e2) ->
+      let (v1, mem') = eval mem env e1 in
+      let (v2, mem'') = eval mem' env e2 in
+      (v2, mem'')
+      
+    | IF (e, e1, e2) ->
+      let (v, mem') = eval mem env e in
+      let b = value_bool v in
+      let (v', mem'') = 
+        if b = true then (eval mem' env e1) else (eval mem' env e2) in
+      (v', mem'')
+
+    | WHILE (e1, e2) ->
+      let (v, mem') = eval mem env e1 in
+      let b = value_bool v in
+      let (v', mem'') = 
+        if b = true then (eval mem' env e2) else (Unit, mem') in
+      (v', mem'')
+    
+    | LETV (x, e1, e2) ->
+      let (v, mem') = eval mem env e1 in
+      let (l, mem'') = Mem.alloc mem' in    
+      eval (Mem.store mem'' l v) (Env.bind env x (Addr l)) e2
+
+    | LETF (f, xl, e1, e2) ->
+      let (xl, e1, env') = lookup_env_proc env f in   
+      let (v, mem') = eval mem env' e2 in
+      (v, mem')    
+
+    | CALLV (f, xl) ->
+      let (xl, e', env') = lookup_env_proc env f in
+      let (v', mem') = eval mem env' e' in
+      (v', mem')   
+        (*| CALLR of id * id list       (* call by referenece *)
+    | RECORD of (id * exp) list   (* record construction *)
+    | FIELD of exp * id           (* access record field *)
+    *) 
+    
     | _ -> failwith "Unimplemented" (* TODO : Implement rest of the cases *)
 
   let run (mem, env, pgm) = 
