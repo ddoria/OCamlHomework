@@ -218,7 +218,8 @@ struct
     | ASSIGN (x, e) ->
       let (v, mem') = eval mem env e in
       let l = lookup_env_loc env x in
-      (v, Mem.store mem' l v)      
+      (v, Mem.store mem' l v)  
+
     | NUM n ->
       (Num n, mem) 
     | TRUE ->
@@ -255,6 +256,7 @@ struct
       let n2 = value_int v2 in
       let v = Num (n1 * n2) in
       (v, mem'')
+
     | DIV (e1, e2) ->
       let (v1, mem') = eval mem env e1 in
       let n1 = value_int v1 in
@@ -265,12 +267,17 @@ struct
     
     | EQUAL (e1, e2) ->
       let (v1, mem') = eval mem env e1 in
-      let n1 = value_int v1 in
       let (v2, mem'') = eval mem' env e2 in
-      let n2 = value_int v2 in
-      let v = if n1 = n2 then Bool true else Bool false in 
-      (v, mem'')
-    
+      let typeMatch (v1, v2) =
+        match (v1, v2) with
+        | (Num n1, Num n2) -> 
+          if n1 = n2 then (Bool true) else (Bool false)
+        | (Bool n1, Bool n2) -> 
+          if n1 = n2 then (Bool true) else (Bool false)
+        | (Unit, Unit) -> (Bool true) 
+        | _ -> (Bool false) 
+      in (typeMatch (v1, v2), mem'')
+
     | LESS (e1, e2) ->
       let (v1, mem') = eval mem env e1 in
       let n1 = value_int v1 in
@@ -300,9 +307,11 @@ struct
     | WHILE (e1, e2) ->
       let (v, mem') = eval mem env e1 in
       let b = value_bool v in
-      let (v', mem'') = 
+      let (v1, mem1) = 
         if b = true then (eval mem' env e2) else (Unit, mem') in
-      (v', mem'')
+      let (v2, mem2) =
+        if b = true then (eval mem1 env (WHILE (e1, e2))) else (Unit, mem') in
+      (v2, mem2)
     
     | LETV (x, e1, e2) ->
       let (v, mem') = eval mem env e1 in
@@ -310,13 +319,20 @@ struct
       eval (Mem.store mem'' l v) (Env.bind env x (Addr l)) e2
 
     | LETF (f, xl, e1, e2) ->
-      let (xl, e1, env') = lookup_env_proc env f in   
-      let (v, mem') = eval mem env' e2 in
-      (v, mem')    
+      let env' = Env.bind env f (Proc (xl, e1, env)) in   
+      eval mem env' e2     
 
-    | CALLV (f, xl) ->
+    | CALLV (f, el) ->
       let (xl, e', env') = lookup_env_proc env f in
-      let (v', mem') = eval mem env' e' in
+      List.fold_left2 (eval mem)
+      let (v1, mem1) = eval mem env e1 in
+      let (v2, mem2) = eval mem1 env e2 in
+      let (vn, memn) = eval mem(n-1) env en in
+
+      (l1, mem2) = Mem.alloc mem1
+      (l2, mem3) = Mem.alloc mem2
+
+      
       (v', mem')   
         (*| CALLR of id * id list       (* call by referenece *)
     | RECORD of (id * exp) list   (* record construction *)

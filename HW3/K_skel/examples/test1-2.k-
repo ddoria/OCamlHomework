@@ -1,0 +1,7 @@
+(* Public test case 1 *)
+
+let x := 2 in
+let y := 2 in
+write x / y
+
+(* Output : prints out "2\n" *)
